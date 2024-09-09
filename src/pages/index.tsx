@@ -153,7 +153,7 @@ export default function Home() {
           num1 = generateVeryHardNumber();
           num2 = generateNumber(2, 12);
         } else if (difficulty === "hard") {
-          num1 = generateNumber(1, 99);
+          num1 = generateNumber(1, 20); // 곱셈의 경우 첫 번째 숫자를 20으로 제한
           num2 = generateNumber(1, 12); // 곱셈의 경우 두 번째 숫자는 작게 유지
         } else {
           num1 = generateNumber(1, 10);
@@ -166,7 +166,7 @@ export default function Home() {
           num1 = num2 * generateVeryHardNumber();
         } else if (difficulty === "hard") {
           num2 = generateNumber(2, 12);
-          num1 = num2 * generateNumber(1, 99);
+          num1 = num2 * generateNumber(1, 20); // 나눗셈의 경우 결과가 1~20 사이가 되도록 조정
         } else {
           num2 = generateNumber(1, 9);
           num1 = num2 * generateNumber(1, 10);
