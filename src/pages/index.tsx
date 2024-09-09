@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Link from 'next/link';
+import { BackspaceIcon } from '@heroicons/react/24/solid';
 
 const MatrixRain = () => {
   useEffect(() => {
@@ -50,7 +51,7 @@ const Keypad = ({ onKeyPress }: { onKeyPress: (key: string) => void }) => {
     '1', '2', '3',
     '4', '5', '6',
     '7', '8', '9',
-    '-', '0', '.'
+    '-', '0', 'backspace'
   ];
 
   return (
@@ -59,14 +60,14 @@ const Keypad = ({ onKeyPress }: { onKeyPress: (key: string) => void }) => {
         <button
           key={key}
           onClick={() => onKeyPress(key)}
-          className="bg-green-500 text-black px-4 py-2 rounded-full text-lg font-bold"
+          className="bg-green-500 text-black px-4 py-2 rounded-full text-lg font-bold flex items-center justify-center"
         >
-          {key}
+          {key === 'backspace' ? <BackspaceIcon className="h-6 w-6" /> : key}
         </button>
       ))}
       <button
         onClick={() => onKeyPress('submit')}
-        className="col-span-3 bg-green-500 text-black px-4 py-2 rounded-full text-lg font-bold hover:bg-green-400 transition-colors"
+        className="col-span-3 bg-green-500 text-black px-4 py-2 rounded-full text-lg font-bold hover:bg-green-400 transition-colors mt-2"
       >
         제출
       </button>
@@ -249,6 +250,8 @@ export default function Home() {
   const handleKeypadPress = (key: string) => {
     if (key === 'submit') {
       checkAnswer();
+    } else if (key === 'backspace') {
+      setAnswer(prev => prev.slice(0, -1));
     } else {
       setAnswer(prev => prev + key);
     }
@@ -391,10 +394,6 @@ export default function Home() {
             <div className="h-8 mt-4">
               {/* 여기에 피드백이 표시될 수 있음 */}
             </div>
-            
-            <Link href="/dashboard" className="mt-4 inline-block bg-green-500 text-black px-6 py-3 rounded-full text-lg font-bold hover:bg-green-400 transition-colors">
-              순위 보기
-            </Link>
           </div>
         )}
       </div>
