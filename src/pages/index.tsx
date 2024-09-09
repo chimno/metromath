@@ -46,7 +46,12 @@ const MatrixRain = () => {
 };
 
 const Keypad = ({ onKeyPress }: { onKeyPress: (key: string) => void }) => {
-  const keys = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', '.'];
+  const keys = [
+    '1', '2', '3',
+    '4', '5', '6',
+    '7', '8', '9',
+    '-', '0', '.'
+  ];
 
   return (
     <div className="grid grid-cols-3 gap-2 mt-4">
@@ -134,6 +139,9 @@ export default function Home() {
         if (difficulty === "veryHard") {
           num1 = generateVeryHardNumber();
           num2 = generateVeryHardNumber();
+        } else if (difficulty === "hard") {
+          num1 = generateNumber(1, 99);
+          num2 = generateNumber(1, 99);
         } else {
           num1 = generateNumber(1, 20);
           num2 = generateNumber(1, 20);
@@ -142,7 +150,10 @@ export default function Home() {
       case '*':
         if (difficulty === "veryHard") {
           num1 = generateVeryHardNumber();
-          num2 = generateNumber(2, 12); // 곱셈의 경우 두 번째 숫자는 작게 유지
+          num2 = generateNumber(2, 12);
+        } else if (difficulty === "hard") {
+          num1 = generateNumber(1, 99);
+          num2 = generateNumber(1, 12); // 곱셈의 경우 두 번째 숫자는 작게 유지
         } else {
           num1 = generateNumber(1, 10);
           num2 = generateNumber(1, 10);
@@ -150,8 +161,11 @@ export default function Home() {
         break;
       case '/':
         if (difficulty === "veryHard") {
-          num2 = generateNumber(2, 12); // 나눗셈의 경우 두 번째 숫자는 작게 유지
+          num2 = generateNumber(2, 12);
           num1 = num2 * generateVeryHardNumber();
+        } else if (difficulty === "hard") {
+          num2 = generateNumber(2, 12);
+          num1 = num2 * generateNumber(1, 99);
         } else {
           num2 = generateNumber(1, 9);
           num1 = num2 * generateNumber(1, 10);
@@ -268,7 +282,7 @@ export default function Home() {
                 <h3 className="text-xl mb-2 font-bold">난이도 기준:</h3>
                 <ul className="list-disc list-inside">
                   <li><span className="font-bold">쉬움:</span> 1~20 사이의 숫자, 덧셈과 뺄셈만, 5초 제한</li>
-                  <li><span className="font-bold">어려움:</span> 1~20 사이의 숫자, 모든 연산 포함, 5초 제한</li>
+                  <li><span className="font-bold">어려움:</span> 1~99 사이의 숫자, 모든 연산 포함, 5초 제한</li>
                   <li><span className="font-bold">매우 어려움:</span> 2자리 이상 숫자(10% 확률로 3자리), 모든 연산 포함, 3초 제한</li>
                 </ul>
               </div>
