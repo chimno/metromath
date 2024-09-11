@@ -12,15 +12,14 @@ export default function Dashboard() {
   const { data: session } = useSession();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
-  const { data: session } = useSession();
 
   const fetchLeaderboard = useCallback(async () => {
-    const response = await fetch('/api/getLeaderboard?difficulty=all');
+    const response = await fetch(`/api/getLeaderboard?difficulty=${selectedDifficulty}`);
     if (response.ok) {
       const data = await response.json();
       setLeaderboard(data);
     }
-  }, []);
+  }, [selectedDifficulty]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -45,7 +44,10 @@ export default function Dashboard() {
           <select
             id="difficulty"
             value={selectedDifficulty}
-            onChange={(e) => setSelectedDifficulty(e.target.value)}
+            onChange={(e) => {
+              setSelectedDifficulty(e.target.value);
+              fetchLeaderboard();
+            }}
             className="bg-black border-2 border-green-500 text-green-500 px-4 py-2 rounded-full text-center text-xl w-full"
           >
             <option value="all">전체</option>
