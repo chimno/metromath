@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
 type LeaderboardEntry = {
@@ -9,7 +8,6 @@ type LeaderboardEntry = {
 };
 
 export default function Dashboard() {
-  const { data: session } = useSession();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
 
