@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import Link from 'next/link';
 import { BackspaceIcon } from '@heroicons/react/24/solid';
+import { signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
+import axios from 'axios';
 
 const MatrixRain = () => {
   useEffect(() => {
@@ -85,8 +88,12 @@ export default function Home() {
   const [difficulty, setDifficulty] = useState("easy");
   const [feedback, setFeedback] = useState("");
   const [inputError, setInputError] = useState("");
-  const [nickname, setNickname] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<Array<{nickname: string, score: number}>>([]);
+  const [leaderboardDifficulty, setLeaderboardDifficulty] = useState("easy");
+
+  const { data: session } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     if (gameState === "playing") {
@@ -241,10 +248,33 @@ export default function Home() {
     }
   };
 
-  const handleGameOver = () => {
-    // 실제 구현에서는 서버로 점수를 보내야 합니다.
-    console.log(`Game Over. Nickname: ${nickname}, Score: ${score}`);
-    // 여기에 서버로 점수를 보내는 로직을 추가해야 합니다.
+  const handleGameOver = async () => {
+    if (session) {
+      try {
+        await axios.post('/api/saveScore', {
+          playerName: session.user?.name,
+          score: score,
+          difficulty: difficulty
+        });
+      } catch (error) {
+        console.error('Failed to save score:', error);
+      }
+
+      await fetchLeaderboard(difficulty);
+      setGameState("leaderboard");
+    } else {
+      setFeedback("점수를 저장하려면 로그인이 필요합니다.");
+      setGameState("splash");
+    }
+  };
+
+  const fetchLeaderboard = async (difficulty: string) => {
+    const leaderboardResponse = await fetch(`/api/getLeaderboard?difficulty=${difficulty}`);
+    if (leaderboardResponse.ok) {
+      const leaderboardData = await leaderboardResponse.json();
+      setLeaderboard(leaderboardData);
+      setLeaderboardDifficulty(difficulty);
+    }
   };
 
   const handleKeypadPress = (key: string) => {
@@ -260,10 +290,34 @@ export default function Home() {
   return (
     <div className="bg-black text-green-500 min-h-screen flex flex-col items-center justify-center p-8 font-mono relative">
       <MatrixRain />
+      {session && (
+        <button
+          onClick={() => signOut()}
+          className="absolute top-4 right-4 text-green-500 text-sm hover:text-green-400 transition-colors"
+        >
+          로그아웃
+        </button>
+      )}
       <div className="z-10 relative bg-black bg-opacity-80 p-8 rounded-lg shadow-lg">
         {gameState === "splash" && (
           <div className="text-center">
             <h1 className="text-4xl mb-8 font-bold">매트릭스 수학 게임</h1>
+            {session ? (
+              <p className="mb-4">안녕하세요, {session.user?.name}님!</p>
+            ) : (
+              <div className="mb-4">
+                <Link href="/login">
+                  <button className="bg-green-500 text-black px-4 py-2 rounded-full text-lg font-bold hover:bg-green-400 transition-colors mr-2">
+                    로그인
+                  </button>
+                </Link>
+                <Link href="/signup">
+                  <button className="bg-green-500 text-black px-4 py-2 rounded-full text-lg font-bold hover:bg-green-400 transition-colors">
+                    회원가입
+                  </button>
+                </Link>
+              </div>
+            )}
             <div className="mb-8">
               <p className="text-xl mb-4">난이도 선택:</p>
               <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
@@ -286,7 +340,7 @@ export default function Home() {
                 <ul className="list-disc list-inside">
                   <li><span className="font-bold">쉬움:</span> 1~20 사이의 숫자, 덧셈과 뺄셈만, 5초 제한</li>
                   <li><span className="font-bold">어려움:</span> 1~99 사이의 숫자, 모든 연산 포함, 5초 제한</li>
-                  <li><span className="font-bold">매우 어려움:</span> 2자리 이상 숫자(10% 확률로 3자리), 모든 연산 포함, 3초 제한</li>
+                  <li><span className="font-bold">매우 어려움:</span> 2자리 이상 자(10% 확률로 3자리), 모든 연산 포함, 3초 제한</li>
                 </ul>
               </div>
             </div>
@@ -365,13 +419,6 @@ export default function Home() {
               difficulty === "hard" ? "어려움" : "매우 어려움"
             }</p>
             <p className="text-xl mb-6">최종 점수: {score}</p>
-            <input
-              type="text"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder="닉네임을 입력하세요"
-              className="bg-black border-2 border-green-500 text-green-500 px-4 py-2 rounded-full text-center text-xl w-full max-w-xs mb-4"
-            />
             <button
               onClick={handleGameOver}
               className="bg-green-500 text-black px-6 py-3 rounded-full text-lg font-bold hover:bg-green-400 transition-colors mb-4"
@@ -384,7 +431,6 @@ export default function Home() {
                   setGameState("splash");
                   setScore(0);
                   setChances(3);
-                  setNickname("");
                 }}
                 className="bg-green-500 text-black px-6 py-3 rounded-full text-lg font-bold hover:bg-green-400 transition-colors"
               >
@@ -394,6 +440,62 @@ export default function Home() {
             <div className="h-8 mt-4">
               {/* 여기에 피드백이 표시될 수 있음 */}
             </div>
+          </div>
+        )}
+
+        {gameState === "leaderboard" && (
+          <div className="text-center">
+            <h2 className="text-3xl mb-4 font-bold">게임 오버</h2>
+            <p className="text-xl mb-2">난이도: {
+              difficulty === "easy" ? "쉬움" : 
+              difficulty === "hard" ? "어려움" : "매우 어려움"
+            }</p>
+            <p className="text-xl mb-6">최종 점수: {score}</p>
+            <h3 className="text-2xl mb-4 font-bold">리더보드</h3>
+            <div className="mb-4 bg-black p-2 rounded-lg inline-block">
+              <button
+                onClick={() => fetchLeaderboard("easy")}
+                className={`px-4 py-2 rounded-full mr-2 ${leaderboardDifficulty === "easy" ? "bg-green-500 text-black" : "text-green-500 border border-green-500"}`}
+              >
+                쉬움
+              </button>
+              <button
+                onClick={() => fetchLeaderboard("hard")}
+                className={`px-4 py-2 rounded-full mr-2 ${leaderboardDifficulty === "hard" ? "bg-green-500 text-black" : "text-green-500 border border-green-500"}`}
+              >
+                어려움
+              </button>
+              <button
+                onClick={() => fetchLeaderboard("veryHard")}
+                className={`px-4 py-2 rounded-full ${leaderboardDifficulty === "veryHard" ? "bg-green-500 text-black" : "text-green-500 border border-green-500"}`}
+              >
+                매우 어려움
+              </button>
+            </div>
+            <p className="text-lg mb-4 bg-black inline-block px-4 py-2 rounded-full">
+              선택된 난이도: {
+                leaderboardDifficulty === "easy" ? "쉬움" :
+                leaderboardDifficulty === "hard" ? "어려움" : "매우 어려움"
+              }
+            </p>
+            <ul className="mb-6 bg-black p-4 rounded-lg">
+              {leaderboard.map((entry, index) => (
+                <li key={index} className="text-lg mb-2">
+                  <span className="inline-block bg-green-500 text-black w-8 h-8 rounded-full mr-2 text-center leading-8">{index + 1}</span>
+                  <span className="text-green-500">{entry.nickname}: {entry.score}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => {
+                setGameState("splash");
+                setScore(0);
+                setChances(3);
+              }}
+              className="bg-green-500 text-black px-6 py-3 rounded-full text-lg font-bold hover:bg-green-400 transition-colors"
+            >
+              다시 시작
+            </button>
           </div>
         )}
       </div>
