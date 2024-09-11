@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from 'next/link';
 import { BackspaceIcon } from '@heroicons/react/24/solid';
 import { signOut, useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
 import axios from 'axios';
 
 const MatrixRain = () => {
@@ -93,36 +92,8 @@ export default function Home() {
   const [leaderboardDifficulty, setLeaderboardDifficulty] = useState("easy");
 
   const { data: session } = useSession();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (gameState === "playing") {
-      generateQuestion();
-    }
-  }, [gameState]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (gameState === "playing" && timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prevTimer) => prevTimer - 1);
-      }, 1000);
-    } else if (timer === 0) {
-      handleTimeUp();
-    }
-    return () => clearInterval(interval);
-  }, [gameState, timer]);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640); // sm 브레이크포인트
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  const generateQuestion = () => {
+  const generateQuestion = useCallback(() => {
     const operations = difficulty === "easy" ? ['+', '-'] : ['+', '-', '*', '/'];
     const operation = operations[Math.floor(Math.random() * operations.length)];
     let num1, num2;
@@ -183,16 +154,46 @@ export default function Home() {
 
     setQuestion(`${num1} ${operation} ${num2} = ?`);
     setTimer(difficulty === "veryHard" ? 3 : 5);
-  };
+  }, [difficulty]);
 
-  const handleTimeUp = () => {
-    setChances(chances - 1);
-    if (chances === 1) {
-      setGameState("gameover");
-    } else {
+  const handleTimeUp = useCallback(() => {
+    setChances(prevChances => {
+      if (prevChances === 1) {
+        setGameState("gameover");
+        return 0;
+      } else {
+        generateQuestion();
+        return prevChances - 1;
+      }
+    });
+  }, [generateQuestion]);
+
+  useEffect(() => {
+    if (gameState === "playing") {
       generateQuestion();
     }
-  };
+  }, [gameState, generateQuestion]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (gameState === "playing" && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prevTimer) => prevTimer - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      handleTimeUp();
+    }
+    return () => clearInterval(interval);
+  }, [gameState, timer, handleTimeUp]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // sm 브레이크포인트
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const checkAnswer = () => {
     const [num1, operation, num2] = question.split(' ');

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -9,27 +9,22 @@ type LeaderboardEntry = {
 };
 
 export default function Dashboard() {
+  const { data: session } = useSession();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const { data: session } = useSession();
 
+  const fetchLeaderboard = useCallback(async () => {
+    const response = await fetch('/api/getLeaderboard?difficulty=all');
+    if (response.ok) {
+      const data = await response.json();
+      setLeaderboard(data);
+    }
+  }, []);
+
   useEffect(() => {
     fetchLeaderboard();
-  }, [selectedDifficulty]);
-
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await fetch(`/api/getLeaderboard?difficulty=${selectedDifficulty}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLeaderboard(data);
-      } else {
-        console.error('Failed to fetch leaderboard');
-      }
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error);
-    }
-  };
+  }, [fetchLeaderboard]);
 
   const getDifficultyLabel = (difficulty: string) => {
     switch (difficulty) {
